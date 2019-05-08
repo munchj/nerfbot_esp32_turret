@@ -15,7 +15,8 @@ unsigned int myTimer;
 #define BACKWARDS 0
 #define MSG_MOVE 1
 #define MSG_SHOOT 2
-#define MSG_CALIBRATE 3
+#define MSG_CALIBRATE_START 3
+#define MSG_CALIBRATE_FINISH 4
 
 
 String commandLine;
@@ -46,7 +47,8 @@ void setup()
   Serial.setTimeout(50);
   Serial.println("nerbot turret init");
   _pusher = new Pusher(servoPin, 2, 4, 33, 15);
-
+  tiltStepper.stop();
+  panStepper.stop();
 }
 
 void loop()
@@ -78,9 +80,14 @@ void loop()
       _pusher->push(1);
       break;
     }
-    case MSG_CALIBRATE:
+    case MSG_CALIBRATE_START:
     {
-      _pusher->calibrate();
+      _pusher->calibrateStart();
+      break;
+    }        
+    case MSG_CALIBRATE_FINISH:
+    {
+      _pusher->calibrateFinish();
       break;
     }    
     case MSG_MOVE:

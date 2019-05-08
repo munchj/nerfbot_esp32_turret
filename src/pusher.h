@@ -27,7 +27,8 @@ class Pusher {
         void tick(); //do its things in a non blocking way
         void setSpeed(unsigned int speed);
         void push(unsigned int number_of_pushes = 30);
-        void calibrate();
+        void calibrateStart();
+        void calibrateFinish();
         void stop();
 
     private:

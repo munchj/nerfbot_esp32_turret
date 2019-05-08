@@ -136,7 +136,13 @@ void Pusher::stop()
     this->_servo.writeMicroseconds(MIN_PULSE_LENGTH);
 }
 
-void Pusher::calibrate()
+void Pusher::calibrateStart()
+{
+    this->_servo.writeMicroseconds(MAX_PULSE_LENGTH);
+    nonBlockingDelay(5000);
+}
+
+void Pusher::calibrateFinish()
 {
     this->_servo.writeMicroseconds(MIN_PULSE_LENGTH);
     nonBlockingDelay(5000);
