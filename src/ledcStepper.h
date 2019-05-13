@@ -64,7 +64,9 @@ class ledcStepper {
         double _reductionRatio;
 
         long _position; //position in ticks
+        bool _enableMinPosition;
         long _minPosition;
+        bool _enableMaxPosition;
         long _maxPosition;
         long _wantedPosition;
         bool _freeRotation;

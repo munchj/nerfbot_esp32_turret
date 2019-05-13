@@ -12,8 +12,8 @@ void ledcStepper::hwInterrupt()
         }
     }
 
-    if(this->_position <= this->_minPosition) stop();
-    if(this->_position >= this->_maxPosition) stop();
+    if(this->_enableMinPosition && this->_position <= this->_minPosition) stop();
+    if(this->_enableMaxPosition && this->_position >= this->_maxPosition) stop();
 
 
 }
@@ -34,6 +34,9 @@ ledcStepper::ledcStepper(uint8_t pwmChannel, uint8_t dirPin, uint8_t stepPin, ui
     this->_stepsPerRevolution = stepsPerRevolution;
     this->_microStepping = microStepping;
     this->_reductionRatio = 1;
+    this->_enableMinPosition = false;
+    this->_enableMaxPosition = false;
+    
 
     //start the timer with a 0hz frequency, 1 duty cycle resolution
     //drv8825 min pulse duration, both high and low is 1.8us
@@ -85,18 +88,22 @@ void ledcStepper::setHome() {
 }
 
 void ledcStepper::setMinPos(long position) {
+    this->_enableMinPosition = true;
     this->_minPosition = position;
 }
 
 void ledcStepper::setMaxPos(long position) {
+    this->_enableMaxPosition = true;
     this->_maxPosition = position;
 }
 
 void ledcStepper::setMinAngle(double angle) {
+    this->_enableMinPosition = true;
     this->_minPosition = angleToTicks(angle);
 }
 
 void ledcStepper::setMaxAngle(double angle) {
+    this->_enableMaxPosition = true;
     this->_maxPosition = angleToTicks(angle);
 }
 

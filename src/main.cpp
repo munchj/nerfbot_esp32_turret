@@ -11,8 +11,12 @@ unsigned int myTimer;
 #define BACKWARDS 0
 #define MSG_MOVE 1
 #define MSG_SHOOT 2
-#define MSG_CALIBRATE 3
-#define MSG_GOTO_POSITION 4
+#define MSG_CALIBRATE_START 3
+#define MSG_CALIBRATE_FINISH 4
+#define MSG_GOTO_POSITION 5
+#define MSG_GOTO_ANGLE 6
+#define MSG_MOVE_POSITION 7
+#define MSG_MOVE_ANGLE 8
 
 String commandLine;
 
@@ -110,6 +114,24 @@ void loop()
       tiltStepper.goToPosition(positionY, speedY);
       break;
     }
+    case MSG_GOTO_ANGLE:
+    {
+      panStepper.goToAngle(angleX, speedX);
+      tiltStepper.goToAngle(angleY, speedY);
+      break;
+    } 
+    case MSG_MOVE_POSITION:
+    {
+      panStepper.movePosition(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionX, speedX);
+      tiltStepper.movePosition(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionY, speedY);
+      break;
+    }   
+    case MSG_MOVE_ANGLE:
+    {
+      panStepper.moveAngle(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleX, speedX);
+      tiltStepper.moveAngle(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleY, speedY);
+      break;
+    }                 
     }
   }
 }
