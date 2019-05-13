@@ -1,15 +1,11 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-
-#include <DRV8825.h>
 #include "pusher.h"
 #include "ledcStepper.h"
 
 Pusher *_pusher;
 unsigned int myTimer;
-
-
 
 #define FORWARD 1
 #define BACKWARDS 0
@@ -17,7 +13,10 @@ unsigned int myTimer;
 #define MSG_SHOOT 2
 #define MSG_CALIBRATE_START 3
 #define MSG_CALIBRATE_FINISH 4
-
+#define MSG_GOTO_POSITION 5
+#define MSG_GOTO_ANGLE 6
+#define MSG_MOVE_POSITION 7
+#define MSG_MOVE_ANGLE 8
 
 String commandLine;
 
@@ -34,49 +33,63 @@ const int tiltPWMChannel = 2;
 
 DynamicJsonDocument doc(1024);
 
-//DRV8825 tiltStepper(32*200, tiltStepperDirPin, tiltStepperStepPin);
-//DRV8825 panStepper(32*200, panStepperDirPin, panStepperStepPin);
+
 ledcStepper tiltStepper(2, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
 ledcStepper panStepper(4, panStepperDirPin, panStepperStepPin, 200, 32);
 
 
+void tiltHwInterrupt()
+{
+  tiltStepper.hwInterrupt();
+}
+
+void panHwInterrupt()
+{
+  panStepper.hwInterrupt();
+}
+
 void setup()
 {
-
   Serial.begin(115200);
   Serial.setTimeout(50);
   Serial.println("nerbot turret init");
   _pusher = new Pusher(servoPin, 2, 4, 33, 15);
   tiltStepper.stop();
   panStepper.stop();
+  tiltStepper.attachInterrupt(&tiltHwInterrupt);
+  panStepper.attachInterrupt(&panHwInterrupt);
 }
 
 void loop()
 {
   _pusher->tick();
 
-
-
   if (Serial.available())
   {
     deserializeJson(doc, Serial);
     long type = doc["type"];
-    long speedX = doc["speedX"];
-    long speedY = doc["speedY"];
+    double speedX = doc["speedX"];
+    double speedY = doc["speedY"];
     long directionX = doc["directionX"];
     long directionY = doc["directionY"];
+    long positionX = doc["positionX"];
+    long positionY = doc["positionY"];
+    double angleX = doc["angleX"];
+    double angleY = doc["angleY"];
 
     switch (type)
     {
     case MSG_SHOOT:
     {
-      if(speedX > 0) {
+      if (speedX > 0)
+      {
         _pusher->setSpeed(speedX);
       }
-      else {
+      else
+      {
         speedX = 18;
       }
-      
+
       _pusher->push(1);
       break;
     }
@@ -89,36 +102,45 @@ void loop()
     {
       _pusher->calibrateFinish();
       break;
-    }    
+    }
     case MSG_MOVE:
     {
       if (speedX > 0)
-      {
-        //panStepper.stop();
-        panStepper.setRPM(directionX == FORWARD?speedX:-speedX);
-        //panStepper.startRotate((directionX == FORWARD ? 100 : -100) * 360);
-        
-      }
+        panStepper.freeRotate(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedX);
       else
-      {
         panStepper.stop();
-      }
 
       if (speedY > 0)
-      {
-        //tiltStepper.stop();
-        tiltStepper.setRPM(directionY == FORWARD ?speedY:-speedY);
-        //tiltStepper.startRotate((directionY == FORWARD ? 100 : -100) * 360);
-      }
+        tiltStepper.freeRotate(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedY);
       else
-      {
         tiltStepper.stop();
-      }
+
       break;
     }
+    case MSG_GOTO_POSITION:
+    {
+      panStepper.goToPosition(positionX, speedX);
+      tiltStepper.goToPosition(positionY, speedY);
+      break;
+    }
+    case MSG_GOTO_ANGLE:
+    {
+      panStepper.goToAngle(angleX, speedX);
+      tiltStepper.goToAngle(angleY, speedY);
+      break;
+    } 
+    case MSG_MOVE_POSITION:
+    {
+      panStepper.movePosition(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionX, speedX);
+      tiltStepper.movePosition(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionY, speedY);
+      break;
+    }   
+    case MSG_MOVE_ANGLE:
+    {
+      panStepper.moveAngle(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleX, speedX);
+      tiltStepper.moveAngle(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleY, speedY);
+      break;
+    }                 
     }
   }
-
-  panStepper.nextAction();
-  tiltStepper.nextAction();
 }
