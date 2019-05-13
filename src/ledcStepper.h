@@ -54,6 +54,10 @@ class ledcStepper {
         void attachInterrupt(void (*fn) ());
         void hwInterrupt();
 
+        ///
+        long getPosition();
+        long _stopCount;
+
     private:
         uint8_t _pwmChannel;
         uint8_t _timer;
@@ -71,6 +75,7 @@ class ledcStepper {
         long _wantedPosition;
         bool _freeRotation;
 
+        
 
         unsigned long _frequency;
         DIRECTION _direction;

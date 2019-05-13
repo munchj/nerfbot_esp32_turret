@@ -59,7 +59,7 @@ void setup()
   tiltStepper.attachInterrupt(&tiltHwInterrupt);
   panStepper.attachInterrupt(&panHwInterrupt);
 }
-
+ 
 void loop()
 {
   _pusher->tick();
@@ -119,6 +119,7 @@ void loop()
     }
     case MSG_GOTO_POSITION:
     {
+      Serial.printf("position %ld %ld \r\n", panStepper.getPosition(), tiltStepper.getPosition());
       panStepper.goToPosition(positionX, speedX);
       tiltStepper.goToPosition(positionY, speedY);
       break;
@@ -131,6 +132,7 @@ void loop()
     } 
     case MSG_MOVE_POSITION:
     {
+      Serial.printf("position %ld %ld %ld \r\n", panStepper.getPosition(), tiltStepper.getPosition(), panStepper._stopCount);
       panStepper.movePosition(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionX, speedX);
       tiltStepper.movePosition(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionY, speedY);
       break;

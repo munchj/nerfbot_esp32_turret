@@ -3,25 +3,29 @@
 
 void ledcStepper::hwInterrupt()
 {
-    if (this->_direction == RT_FORWARD) this->_position++;
+    this->_position = 1337;
+    /*if (this->_direction == RT_FORWARD) this->_position++;
     else this->_position--;
 
     if(!this->_freeRotation) {
         if(this->_wantedPosition == this->_position) {
+            
             this->stop();
         }
     }
 
     if(this->_enableMinPosition && this->_position <= this->_minPosition) stop();
     if(this->_enableMaxPosition && this->_position >= this->_maxPosition) stop();
-
+*/
 
 }
 
 void ledcStepper::attachInterrupt(void (*fn)())
 {
+    Serial.println("attaching interrupt");
     hw_timer_t *_timer_t = timerGet(this->_timer);
     timerAttachInterrupt(_timer_t, fn, true);
+    Serial.println("attaching interrupt done");
 }
 
 
@@ -37,7 +41,7 @@ ledcStepper::ledcStepper(uint8_t pwmChannel, uint8_t dirPin, uint8_t stepPin, ui
     this->_enableMinPosition = false;
     this->_enableMaxPosition = false;
     
-
+    this->_stopCount = 0;
     //start the timer with a 0hz frequency, 1 duty cycle resolution
     //drv8825 min pulse duration, both high and low is 1.8us
     //with 32 microstepping, 200 steps per revolution, 200rpm, we need 21333 steps/s
@@ -53,6 +57,10 @@ ledcStepper::ledcStepper(uint8_t pwmChannel, uint8_t dirPin, uint8_t stepPin, ui
 
 ledcStepper::~ledcStepper()
 {
+}
+
+long ledcStepper::getPosition() {
+    return this->_position;
 }
 
 void ledcStepper::setReductionRatio(double reductionRatio) {
@@ -71,6 +79,7 @@ void ledcStepper::_setFrequency(unsigned int frequency)
 
 void ledcStepper::stop()
 {
+    this->_stopCount++;
     this->_setRPM(0);
     this->_rotate();
 }
@@ -128,7 +137,7 @@ void ledcStepper::goToPosition(long position, double rpm)
 
     if (this->_position == position) return; //
 
-    this->_position = position;
+    this->_wantedPosition = position;
     this->_direction =  (position > this->_position) ? RT_FORWARD : RT_BACKWARDS;
 
     this->_rotate();
@@ -141,6 +150,7 @@ void ledcStepper::goToAngle(long angle, double rpm) {
 
 void ledcStepper::freeRotateF(DIRECTION direction, unsigned int frequency)
 {
+    this->_freeRotation = false;
     this->_direction = direction;
     this->_setFrequency(frequency);
     this->_freeRotation = true;
@@ -154,7 +164,7 @@ void ledcStepper::goToPositionF(long position, unsigned int frequency)
 
     if (this->_position == position) return; //
 
-    this->_position = position;
+    this->_wantedPosition = position;
     this->_direction =  (position > this->_position) ? RT_FORWARD : RT_BACKWARDS;
 
     this->_rotate(); 
@@ -166,6 +176,7 @@ void ledcStepper::goToAngleF(long angle, unsigned int frequency) {
 
 
 void ledcStepper::movePosition(DIRECTION direction, long position, double rpm) {
+    this->_freeRotation = false;
     if(direction == RT_FORWARD) {
         goToPosition(this->_position + position, rpm);
     }
@@ -175,6 +186,7 @@ void ledcStepper::movePosition(DIRECTION direction, long position, double rpm) {
 }
 
 void ledcStepper::movePositionF(DIRECTION direction, long position, unsigned int frequency) {
+    this->_freeRotation = false;
     if(direction == RT_FORWARD) {
         goToPositionF(this->_position + position, frequency);
     }
@@ -184,9 +196,11 @@ void ledcStepper::movePositionF(DIRECTION direction, long position, unsigned int
 }
 
 void ledcStepper::moveAngle(DIRECTION direction, long angle, double rpm) {
+    this->_freeRotation = false;
     movePosition(direction, angleToTicks(angle), rpm);
 }
 
 void ledcStepper::moveAngleF(DIRECTION direction, long angle, unsigned int frequency) {
+    this->_freeRotation = false;
     movePositionF(direction, angleToTicks(angle), frequency);
 }     
