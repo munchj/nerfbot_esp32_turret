@@ -36,8 +36,8 @@ DynamicJsonDocument doc(1024);
 
 //DRV8825 tiltStepper(32*200, tiltStepperDirPin, tiltStepperStepPin);
 //DRV8825 panStepper(32*200, panStepperDirPin, panStepperStepPin);
-ledcStepper tiltStepper(1, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
-ledcStepper panStepper(2, panStepperDirPin, panStepperStepPin, 200, 32);
+ledcStepper tiltStepper(2, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
+ledcStepper panStepper(4, panStepperDirPin, panStepperStepPin, 200, 32);
 
 
 void setup()
