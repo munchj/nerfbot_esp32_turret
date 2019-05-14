@@ -17,6 +17,7 @@ unsigned int myTimer;
 #define MSG_GOTO_ANGLE 6
 #define MSG_MOVE_POSITION 7
 #define MSG_MOVE_ANGLE 8
+#define MSG_HOME 9
 
 String commandLine;
 
@@ -40,13 +41,11 @@ ledcStepper * _panStepper;
 
 void tiltHwInterrupt()
 {
-  Serial.println("tiltInterrupt");
   _tiltStepper->hwInterrupt();
 }
 
 void panHwInterrupt()
 {
-  Serial.println("panInterrupt");
   _panStepper->hwInterrupt();
 }
 
@@ -58,10 +57,11 @@ void setup()
   _pusher = new Pusher(servoPin, 2, 4, 33, 15);
   _tiltStepper = new ledcStepper(2, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
   _panStepper = new ledcStepper(4, panStepperDirPin, panStepperStepPin, 200, 32);
+  _tiltStepper->setupInterrupt(&tiltHwInterrupt);
+  _panStepper->setupInterrupt(&panHwInterrupt);
   _tiltStepper->stop();
-  _panStepper->stop();
-  _tiltStepper->attachInterrupt(&tiltHwInterrupt);
-  _panStepper->attachInterrupt(&panHwInterrupt);
+  _panStepper->stop();  
+
 }
  
 void loop()
@@ -80,6 +80,8 @@ void loop()
     long positionY = doc["positionY"];
     double angleX = doc["angleX"];
     double angleY = doc["angleY"];
+
+    
 
     switch (type)
     {
@@ -144,7 +146,13 @@ void loop()
       _panStepper->moveAngle(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleX, speedX);
       _tiltStepper->moveAngle(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleY, speedY);
       break;
-    }                 
+    }   
+    case MSG_HOME:
+    {
+      _panStepper->setHome();
+      _tiltStepper->setHome();
+      break;
+    }                     
     }
   }
 }

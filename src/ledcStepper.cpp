@@ -4,6 +4,7 @@
 void ledcStepper::hwInterrupt()
 {
     portENTER_CRITICAL_ISR(&this->_timerMux);
+    //Serial.println("interrupt");
     if (this->_direction == RT_FORWARD) this->_position++;
     else this->_position--;
 
@@ -20,14 +21,17 @@ void ledcStepper::hwInterrupt()
 
 }
 
-void ledcStepper::attachInterrupt(void (*fn)())
+void ledcStepper::setupInterrupt(void (*fn)())
 {
-    Serial.println("attaching interrupt");
-    hw_timer_t *_timer_t = timerGet(this->_timer);
-    timerAttachInterrupt(_timer_t, fn, true);
-    timerAlarmWrite(_timer_t, 1, true);
-    timerAlarmEnable(_timer_t);
-    Serial.println("attaching interrupt done");
+    //start the timer with a 0hz frequency, 1 duty cycle resolution
+    //drv8825 min pulse duration, both high and low is 1.8us
+    //with 32 microstepping, 200 steps per revolution, 200rpm, we need 21333 steps/s
+    //which gives us about 47us (23.5us low/23.5us high) cycles
+    ledcSetup(this->_pwmChannel, 0, 8);
+    ledcAttachPin(this->_stepPin, this->_pwmChannel);
+    ledcWrite(this->_pwmChannel, 4);
+
+    attachInterrupt(digitalPinToInterrupt(this->_stepPin), fn, FALLING);
 }
 
 
@@ -47,13 +51,6 @@ ledcStepper::ledcStepper(uint8_t pwmChannel, uint8_t dirPin, uint8_t stepPin, ui
     this->_timerMux = portMUX_INITIALIZER_UNLOCKED;
     
 
-    //start the timer with a 0hz frequency, 1 duty cycle resolution
-    //drv8825 min pulse duration, both high and low is 1.8us
-    //with 32 microstepping, 200 steps per revolution, 200rpm, we need 21333 steps/s
-    //which gives us about 47us (23.5us low/23.5us high) cycles
-    ledcSetup(this->_pwmChannel, 0, 8);
-    ledcAttachPin(this->_stepPin, this->_pwmChannel);
-    ledcWrite(this->_pwmChannel, 4);
 
     //direction pin setup
     pinMode(this->_dirPin, OUTPUT);
@@ -84,8 +81,10 @@ void ledcStepper::_setFrequency(unsigned int frequency)
 
 void ledcStepper::stop()
 {
+    portENTER_CRITICAL(&this->_timerMux);
     this->_setRPM(0);
     this->_rotate();
+    portEXIT_CRITICAL(&this->_timerMux);
 }
 
 long ledcStepper::angleToTicks(double angle) {
@@ -138,12 +137,15 @@ void ledcStepper::freeRotate(DIRECTION direction, double rpm)
 
 void ledcStepper::goToPosition(long position, double rpm)
 {
+    Serial.printf("goToPosition %ld %f \r\n", position, rpm);
     portENTER_CRITICAL(&this->_timerMux);
-    Serial.printf("[stepper %d] position %ld \r\n", this->_pwmChannel, this->getPosition());
     this->_freeRotation = false;
     this->_setRPM(rpm);
     
-    if (this->_position == position) return; 
+    if (this->_position == position) {
+        portEXIT_CRITICAL(&this->_timerMux);
+        return; 
+    } 
     
     this->_wantedPosition = position;
 
@@ -154,8 +156,52 @@ void ledcStepper::goToPosition(long position, double rpm)
 }
 
 void ledcStepper::goToAngle(long angle, double rpm) {
+    Serial.printf("goToAngle %ld %f \r\n", angle, rpm);
     goToPosition(angleToTicks(angle), rpm);
 }
+
+
+void ledcStepper::movePosition(DIRECTION direction, long position, double rpm) {
+     Serial.printf("goToAngle %d %ld %f \r\n",direction, position, rpm);
+    portENTER_CRITICAL(&this->_timerMux);
+    this->_freeRotation = false;
+    if(direction == RT_FORWARD) {
+        goToPosition(this->_position + position, rpm);
+    }
+    else {
+        goToPosition(this->_position - position, rpm);
+    }
+    portEXIT_CRITICAL(&this->_timerMux);
+}
+
+
+void ledcStepper::moveAngle(DIRECTION direction, long angle, double rpm) {
+    Serial.printf("moveAngle %d %ld %f \r\n",direction, angle, rpm);
+    this->_freeRotation = false;
+    movePosition(direction, angleToTicks(angle), rpm);
+}
+
+
+
+void ledcStepper::movePositionF(DIRECTION direction, long position, unsigned int frequency) {
+    portENTER_CRITICAL(&this->_timerMux);
+    this->_freeRotation = false;
+    if(direction == RT_FORWARD) {
+        goToPositionF(this->_position + position, frequency);
+    }
+    else {
+        goToPositionF(this->_position - position, frequency);
+    }
+    portEXIT_CRITICAL(&this->_timerMux);
+}
+
+
+
+void ledcStepper::moveAngleF(DIRECTION direction, long angle, unsigned int frequency) {
+    this->_freeRotation = false;
+    movePositionF(direction, angleToTicks(angle), frequency);
+}     
+
 
 void ledcStepper::freeRotateF(DIRECTION direction, unsigned int frequency)
 {
@@ -172,7 +218,10 @@ void ledcStepper::goToPositionF(long position, unsigned int frequency)
     this->_freeRotation = false;
     this->_setFrequency(frequency);
 
-    if (this->_position == position) return; //
+       if (this->_position == position) {
+        portEXIT_CRITICAL(&this->_timerMux);
+        return; 
+    } 
 
     this->_wantedPosition = position;
     this->_direction =  (position > this->_position) ? RT_FORWARD : RT_BACKWARDS;
@@ -184,34 +233,3 @@ void ledcStepper::goToPositionF(long position, unsigned int frequency)
 void ledcStepper::goToAngleF(long angle, unsigned int frequency) {
     goToPositionF(angleToTicks(angle), frequency);
 }
-
-
-void ledcStepper::movePosition(DIRECTION direction, long position, double rpm) {
-    this->_freeRotation = false;
-    if(direction == RT_FORWARD) {
-        goToPosition(this->_position + position, rpm);
-    }
-    else {
-        goToPosition(this->_position - position, rpm);
-    }
-}
-
-void ledcStepper::movePositionF(DIRECTION direction, long position, unsigned int frequency) {
-    this->_freeRotation = false;
-    if(direction == RT_FORWARD) {
-        goToPositionF(this->_position + position, frequency);
-    }
-    else {
-        goToPositionF(this->_position - position, frequency);
-    }
-}
-
-void ledcStepper::moveAngle(DIRECTION direction, long angle, double rpm) {
-    this->_freeRotation = false;
-    movePosition(direction, angleToTicks(angle), rpm);
-}
-
-void ledcStepper::moveAngleF(DIRECTION direction, long angle, unsigned int frequency) {
-    this->_freeRotation = false;
-    movePositionF(direction, angleToTicks(angle), frequency);
-}     

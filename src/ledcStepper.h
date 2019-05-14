@@ -51,7 +51,7 @@ class ledcStepper {
 
 
         ///// hardware interrupt to track position
-        void attachInterrupt(void (*fn) ());
+        void setupInterrupt(void (*fn) ());
         void hwInterrupt();
 
         ///
@@ -76,6 +76,7 @@ class ledcStepper {
 
         //mutex
         portMUX_TYPE _timerMux;
+        hw_timer_t * _timer_t;
 
         unsigned long _frequency;
         DIRECTION _direction;
