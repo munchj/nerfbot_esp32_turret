@@ -61,7 +61,8 @@ void setup()
   _panStepper->setupInterrupt(&panHwInterrupt);
   _tiltStepper->stop();
   _panStepper->stop();  
-
+  _tiltStepper->setReductionRatio(2.66666);
+  _panStepper->setReductionRatio(4.44444);
 }
  
 void loop()

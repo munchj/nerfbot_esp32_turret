@@ -155,8 +155,8 @@ void ledcStepper::goToPosition(long position, double rpm)
     portEXIT_CRITICAL(&this->_timerMux);
 }
 
-void ledcStepper::goToAngle(long angle, double rpm) {
-    Serial.printf("goToAngle %ld %f \r\n", angle, rpm);
+void ledcStepper::goToAngle(double angle, double rpm) {
+    Serial.printf("goToAngle %f %f \r\n", angle, rpm);
     goToPosition(angleToTicks(angle), rpm);
 }
 
@@ -175,61 +175,11 @@ void ledcStepper::movePosition(DIRECTION direction, long position, double rpm) {
 }
 
 
-void ledcStepper::moveAngle(DIRECTION direction, long angle, double rpm) {
-    Serial.printf("moveAngle %d %ld %f \r\n",direction, angle, rpm);
+void ledcStepper::moveAngle(DIRECTION direction, double angle, double rpm) {
+    Serial.printf("moveAngle %d %f %f \r\n",direction, angle, rpm);
     this->_freeRotation = false;
     movePosition(direction, angleToTicks(angle), rpm);
 }
 
 
 
-void ledcStepper::movePositionF(DIRECTION direction, long position, unsigned int frequency) {
-    portENTER_CRITICAL(&this->_timerMux);
-    this->_freeRotation = false;
-    if(direction == RT_FORWARD) {
-        goToPositionF(this->_position + position, frequency);
-    }
-    else {
-        goToPositionF(this->_position - position, frequency);
-    }
-    portEXIT_CRITICAL(&this->_timerMux);
-}
-
-
-
-void ledcStepper::moveAngleF(DIRECTION direction, long angle, unsigned int frequency) {
-    this->_freeRotation = false;
-    movePositionF(direction, angleToTicks(angle), frequency);
-}     
-
-
-void ledcStepper::freeRotateF(DIRECTION direction, unsigned int frequency)
-{
-    this->_freeRotation = false;
-    this->_direction = direction;
-    this->_setFrequency(frequency);
-    this->_freeRotation = true;
-    this->_rotate();
-}
-
-void ledcStepper::goToPositionF(long position, unsigned int frequency)
-{
-    portENTER_CRITICAL(&this->_timerMux);
-    this->_freeRotation = false;
-    this->_setFrequency(frequency);
-
-       if (this->_position == position) {
-        portEXIT_CRITICAL(&this->_timerMux);
-        return; 
-    } 
-
-    this->_wantedPosition = position;
-    this->_direction =  (position > this->_position) ? RT_FORWARD : RT_BACKWARDS;
-
-    this->_rotate(); 
-    portEXIT_CRITICAL(&this->_timerMux);
-}
-
-void ledcStepper::goToAngleF(long angle, unsigned int frequency) {
-    goToPositionF(angleToTicks(angle), frequency);
-}

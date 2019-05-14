@@ -21,20 +21,10 @@ class ledcStepper {
 
         // movement methods
         void freeRotate(DIRECTION direction, double rpm);
-        void freeRotateF(DIRECTION direction, unsigned int frequency);
-
         void goToPosition(long position, double rpm);
-        void goToPositionF(long position, unsigned int frequency); 
-
-        void goToAngle(long angle, double rpm);
-        void goToAngleF(long angle, unsigned int frequency);               
-        
+        void goToAngle(double angle, double rpm);
         void movePosition(DIRECTION direction, long position, double rpm);
-        void movePositionF(DIRECTION direction, long position, unsigned int frequency);
-
-        void moveAngle(DIRECTION direction, long angle, double rpm);
-        void moveAngleF(DIRECTION direction, long angle, unsigned int frequency);        
-
+        void moveAngle(DIRECTION direction, double angle, double rpm);
         void stop(); //immediate stop
 
 
