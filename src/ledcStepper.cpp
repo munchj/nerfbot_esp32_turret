@@ -162,7 +162,7 @@ void ledcStepper::goToAngle(double angle, double rpm) {
 
 
 void ledcStepper::movePosition(DIRECTION direction, long position, double rpm) {
-     Serial.printf("goToAngle %d %ld %f \r\n",direction, position, rpm);
+     Serial.printf("movePosition %d %ld %f \r\n",direction, position, rpm);
     portENTER_CRITICAL(&this->_timerMux);
     this->_freeRotation = false;
     if(direction == RT_FORWARD) {
