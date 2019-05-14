@@ -34,18 +34,20 @@ const int tiltPWMChannel = 2;
 DynamicJsonDocument doc(1024);
 
 
-ledcStepper tiltStepper(2, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
-ledcStepper panStepper(4, panStepperDirPin, panStepperStepPin, 200, 32);
+ledcStepper * _tiltStepper;
+ledcStepper * _panStepper;
 
 
 void tiltHwInterrupt()
 {
-  tiltStepper.hwInterrupt();
+  Serial.println("tiltInterrupt");
+  _tiltStepper->hwInterrupt();
 }
 
 void panHwInterrupt()
 {
-  panStepper.hwInterrupt();
+  Serial.println("panInterrupt");
+  _panStepper->hwInterrupt();
 }
 
 void setup()
@@ -54,10 +56,12 @@ void setup()
   Serial.setTimeout(50);
   Serial.println("nerbot turret init");
   _pusher = new Pusher(servoPin, 2, 4, 33, 15);
-  tiltStepper.stop();
-  panStepper.stop();
-  tiltStepper.attachInterrupt(&tiltHwInterrupt);
-  panStepper.attachInterrupt(&panHwInterrupt);
+  _tiltStepper = new ledcStepper(2, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
+  _panStepper = new ledcStepper(4, panStepperDirPin, panStepperStepPin, 200, 32);
+  _tiltStepper->stop();
+  _panStepper->stop();
+  _tiltStepper->attachInterrupt(&tiltHwInterrupt);
+  _panStepper->attachInterrupt(&panHwInterrupt);
 }
  
 void loop()
@@ -106,41 +110,39 @@ void loop()
     case MSG_MOVE:
     {
       if (speedX > 0)
-        panStepper.freeRotate(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedX);
+        _panStepper->freeRotate(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedX);
       else
-        panStepper.stop();
+        _panStepper->stop();
 
       if (speedY > 0)
-        tiltStepper.freeRotate(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedY);
+        _tiltStepper->freeRotate(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedY);
       else
-        tiltStepper.stop();
+        _tiltStepper->stop();
 
       break;
     }
     case MSG_GOTO_POSITION:
     {
-      Serial.printf("position %ld %ld \r\n", panStepper.getPosition(), tiltStepper.getPosition());
-      panStepper.goToPosition(positionX, speedX);
-      tiltStepper.goToPosition(positionY, speedY);
+      _panStepper->goToPosition(positionX, speedX);
+      _tiltStepper->goToPosition(positionY, speedY);
       break;
     }
     case MSG_GOTO_ANGLE:
     {
-      panStepper.goToAngle(angleX, speedX);
-      tiltStepper.goToAngle(angleY, speedY);
+      _panStepper->goToAngle(angleX, speedX);
+      _tiltStepper->goToAngle(angleY, speedY);
       break;
     } 
     case MSG_MOVE_POSITION:
     {
-      Serial.printf("position %ld %ld %ld \r\n", panStepper.getPosition(), tiltStepper.getPosition(), panStepper._stopCount);
-      panStepper.movePosition(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionX, speedX);
-      tiltStepper.movePosition(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionY, speedY);
+      _panStepper->movePosition(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionX, speedX);
+      _tiltStepper->movePosition(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionY, speedY);
       break;
     }   
     case MSG_MOVE_ANGLE:
     {
-      panStepper.moveAngle(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleX, speedX);
-      tiltStepper.moveAngle(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleY, speedY);
+      _panStepper->moveAngle(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleX, speedX);
+      _tiltStepper->moveAngle(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleY, speedY);
       break;
     }                 
     }

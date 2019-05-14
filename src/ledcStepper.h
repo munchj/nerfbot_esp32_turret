@@ -56,7 +56,6 @@ class ledcStepper {
 
         ///
         long getPosition();
-        long _stopCount;
 
     private:
         uint8_t _pwmChannel;
@@ -67,7 +66,7 @@ class ledcStepper {
         uint8_t _microStepping;
         double _reductionRatio;
 
-        long _position; //position in ticks
+        volatile long _position; //position in ticks
         bool _enableMinPosition;
         long _minPosition;
         bool _enableMaxPosition;
@@ -75,7 +74,8 @@ class ledcStepper {
         long _wantedPosition;
         bool _freeRotation;
 
-        
+        //mutex
+        portMUX_TYPE _timerMux;
 
         unsigned long _frequency;
         DIRECTION _direction;
