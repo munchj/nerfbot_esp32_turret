@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include "helper.h"
+
 
 #ifndef LEDC_STEPPER_H
 #define LEDC_STEPPER_H
@@ -8,11 +10,6 @@
 
 class ledcStepper {
     public:
-        enum DIRECTION {
-            RT_FORWARD,
-            RT_BACKWARDS
-        };
-
         ledcStepper(uint8_t pwmChannel, uint8_t dirPin,  uint8_t stepPin, uint8_t stepsPerRevolution, uint8_t microStepping);
         ~ledcStepper();
         // optional: reduction ratio, default is 1

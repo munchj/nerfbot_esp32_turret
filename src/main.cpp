@@ -1,36 +1,28 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+#include "helper.h"
 #include "pusher.h"
 #include "ledcStepper.h"
+
 
 Pusher *_pusher;
 unsigned int myTimer;
 
-#define FORWARD 1
-#define BACKWARDS 0
-#define MSG_MOVE 1
-#define MSG_SHOOT 2
-#define MSG_CALIBRATE_START 3
-#define MSG_CALIBRATE_FINISH 4
-#define MSG_GOTO_POSITION 5
-#define MSG_GOTO_ANGLE 6
-#define MSG_MOVE_POSITION 7
-#define MSG_MOVE_ANGLE 8
-#define MSG_HOME 9
+
 
 String commandLine;
 
 //Flywheels
 const int servoPin = 22;
 
-const int panStepperStepPin = 14;
-const int panStepperDirPin = 27;
-const int panPWMChannel = 1;
-
-const int tiltStepperStepPin = 13;
-const int tiltStepperDirPin = 12;
+const int tiltStepperStepPin = 14;
+const int tiltStepperDirPin = 27;
 const int tiltPWMChannel = 2;
+
+const int panStepperStepPin = 13;
+const int panStepperDirPin = 12;
+const int panPWMChannel = 4;
 
 DynamicJsonDocument doc(1024);
 
@@ -55,14 +47,14 @@ void setup()
   Serial.setTimeout(50);
   Serial.println("nerbot turret init");
   _pusher = new Pusher(servoPin, 2, 4, 33, 15);
-  _tiltStepper = new ledcStepper(2, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
-  _panStepper = new ledcStepper(4, panStepperDirPin, panStepperStepPin, 200, 32);
+  _tiltStepper = new ledcStepper(tiltPWMChannel, tiltStepperDirPin, tiltStepperStepPin, 200, 32);
+  _panStepper = new ledcStepper(panPWMChannel, panStepperDirPin, panStepperStepPin, 200, 32);
   _tiltStepper->setupInterrupt(&tiltHwInterrupt);
   _panStepper->setupInterrupt(&panHwInterrupt);
   _tiltStepper->stop();
   _panStepper->stop();  
-  _tiltStepper->setReductionRatio(2.66666);
-  _panStepper->setReductionRatio(4.44444);
+  _tiltStepper->setReductionRatio(5);
+  _panStepper->setReductionRatio(6.66666666);
 }
  
 void loop()
@@ -113,12 +105,12 @@ void loop()
     case MSG_MOVE:
     {
       if (speedX > 0)
-        _panStepper->freeRotate(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedX);
+        _panStepper->freeRotate(static_cast<DIRECTION>(directionX), speedX);
       else
         _panStepper->stop();
 
       if (speedY > 0)
-        _tiltStepper->freeRotate(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, speedY);
+        _tiltStepper->freeRotate(static_cast<DIRECTION>(directionY), speedY);
       else
         _tiltStepper->stop();
 
@@ -138,14 +130,14 @@ void loop()
     } 
     case MSG_MOVE_POSITION:
     {
-      _panStepper->movePosition(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionX, speedX);
-      _tiltStepper->movePosition(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, positionY, speedY);
+      _panStepper->movePosition(static_cast<DIRECTION>(directionX), positionX, speedX);
+      _tiltStepper->movePosition(static_cast<DIRECTION>(directionY), positionY, speedY);
       break;
     }   
     case MSG_MOVE_ANGLE:
     {
-      _panStepper->moveAngle(directionX == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleX, speedX);
-      _tiltStepper->moveAngle(directionY == FORWARD ? ledcStepper::RT_FORWARD : ledcStepper::RT_BACKWARDS, angleY, speedY);
+      _panStepper->moveAngle(static_cast<DIRECTION>(directionX), angleX, speedX);
+      _tiltStepper->moveAngle(static_cast<DIRECTION>(directionY), angleY, speedY);
       break;
     }   
     case MSG_HOME:
